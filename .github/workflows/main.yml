@@ -1,0 +1,118 @@
+name: Test
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  lint:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: '3.12', python: '3.12', os: ubuntu-latest}
+          - {name: '3.11', python: '3.11', os: ubuntu-latest}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Instasll poethepoet
+        run: poetry self add 'poethepoet[poetry_plugin]'
+      - name: Instasll poetry-dynamic-versioning
+        run: poetry self add 'poetry-dynamic-versioning[plugin]'
+      - uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install libraries
+        run: poetry install
+      - name: run lint
+        run: poetry poe lint
+  test:
+    needs: lint
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: '3.12', python: '3.12', os: ubuntu-latest}
+          - {name: '3.11', python: '3.11', os: ubuntu-latest}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Instasll poethepoet
+        run: poetry self add 'poethepoet[poetry_plugin]'
+      - name: Instasll poetry-dynamic-versioning
+        run: poetry self add 'poetry-dynamic-versioning[plugin]'
+      - uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install libraries
+        run: poetry install
+      - name: run test
+        run: poetry poe test
+  release:
+    needs: test
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          REF: ${{ github.ref }}
+        run: echo "${REF##*/}"
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Instasll poethepoet
+        run: poetry self add 'poethepoet[poetry_plugin]'
+      - name: Instasll poetry-dynamic-versioning
+        run: poetry self add 'poetry-dynamic-versioning[plugin]'
+      - uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install libraries
+        run: poetry install
+      - name: Build package
+        run: poetry build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: 'dist'
+          path: 'dist'
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: 'dist/*'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false

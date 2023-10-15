@@ -1,0 +1,19 @@
+# python
+__pycache__
+*.py[co]
+
+# python-venv
+.venv
+
+# pyenv
+.python-version
+
+# poetry
+.env
+
+# pytest
+report.xml
+
+# pytest-cov
+.coverage
+coverage.xml
