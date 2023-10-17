@@ -54,7 +54,7 @@ class Session:
             chat_list: list[Chat] = Chat.parse_chats(res.text)
         except ParseError as error:
             raise ParseError(f"{error} [{chats_url}]")
-        logger.debug(chat_list)
+        return chat_list
 
     def _get_hidden_value_dict(self, form_el: Tag) -> dict[str, str]:
         hidden_els = form_el.find_all("input", attrs={"type": "hidden"})

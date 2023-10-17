@@ -22,6 +22,20 @@ class Chat:
         self.image_url = image_url
         self.video_url = video_url
 
+    def get_text(self) -> str:
+        str_list: list[str] = []
+        if len(self.text) > 0:
+            str_list.append(self.text)
+        if isinstance(self.image_url, str):
+            str_list.append(self.image_url)
+        if isinstance(self.image_url, list):
+            str_list += self.image_url
+        if isinstance(self.video_url, str):
+            str_list.append(self.video_url)
+        if isinstance(self.video_url, list):
+            str_list += self.video_url
+        return ",".join(str_list)
+
     @staticmethod
     def parse_chats(htmltext: str):
         idmatch = re.compile(r"^message-[\d\-_]+$")
@@ -37,12 +51,13 @@ class Chat:
 
             flex_els = message_el.select("div.flex")
             if len(flex_els) != 2:
+                logger.warning(f"flex_els not found {message_el=}, {flex_els=}")
                 continue
             content_el = flex_els[0]
             content_body_el = content_el.find("div")
             text = ""
             if isinstance(content_body_el, Tag):
-                text_str = content_body_el.string
+                text_str = content_body_el.get_text()
                 if text_str is None:
                     text_str = ""
                 text = text_str.strip()

@@ -38,4 +38,6 @@ def cli(username: str, password: str, verbose: bool):
         logger.setLevel("DEBUG")
     session = Session()
     session.login(username, password)
-    session.get_chats(chatid="8")
+    chat_list = session.get_chats(chatid="8")
+    for chat in chat_list:
+        logger.info(chat.get_text())
